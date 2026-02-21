@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+huggingface_hub
+requests
+aiofiles
+pydantic
+sqlalchemy
+aiohttp

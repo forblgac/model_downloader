@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Downloader</title>
+    <!-- Modern font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="blob-bg blob-1"></div>
+    <div class="blob-bg blob-2"></div>
+    
+    <div class="container">
+        <header>
+            <h1><i class="fa-solid fa-cloud-arrow-down"></i> Model Downloader</h1>
+            <p>Background downloading for heavy AI Models from HuggingFace & Civitai</p>
+        </header>
+
+        <section class="glass-panel" id="add-download-section">
+            <h2>Add New Download</h2>
+            <form id="download-form">
+                <div class="input-group">
+                    <label for="url"><i class="fa-solid fa-link"></i> Model URL</label>
+                    <input type="url" id="url" name="url" placeholder="https://huggingface.co/... or https://civitai.com/..." required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="destination"><i class="fa-solid fa-folder"></i> Destination Directory</label>
+                    <select id="destination" name="destination">
+                        <option value="models/checkpoints">Checkpoint (models/checkpoints)</option>
+                        <option value="models/loras">LoRA (models/loras)</option>
+                        <option value="models/controlnet">ControlNet (models/controlnet)</option>
+                        <option value="models/unet">UNet (models/unet)</option>
+                        <option value="models/clip">CLIP (models/clip)</option>
+                        <option value="models/vae">VAE (models/vae)</option>
+                        <option value="models/downloads">Other (models/downloads)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="primary-btn"><i class="fa-solid fa-download"></i> Start Download</button>
+            </form>
+        </section>
+
+        <section class="downloads-container">
+            <h2>Active & Recent Downloads</h2>
+            <div id="downloads-list">
+                <!-- Download items will be injected here by JS -->
+                <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading...</div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Template for a download item -->
+    <template id="download-item-template">
+        <div class="download-item glass-panel">
+            <div class="item-header">
+                <div class="item-info">
+                    <h3 class="filename">filename.safetensors</h3>
+                    <span class="url">https://url.com</span>
+                    <span class="destination badge">models/checkpoints</span>
+                </div>
+                <div class="item-actions">
+                    <button class="delete-btn" aria-label="Cancel or Delete"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            
+            <div class="status-indicator">
+                <span class="status-badge status-pending">PENDING</span>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="progress-stats">
+                    <span class="percentage">0%</span>
+                </div>
+            </div>
+            
+            <div class="error-message"></div>
+        </div>
+    </template>
+
+    <script src="app.js"></script>
+</body>
+</html>
