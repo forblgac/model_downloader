@@ -28,9 +28,9 @@ class DownloadRequest(BaseModel):
     url: str
     destination_folder: Optional[str] = "models/downloads"
 
-class MoveRequest(BaseModel):
-    source_path: str
-    destination_folder: Optional[str] = "models/downloads"
+class MoveTaskRequest(BaseModel):
+    task_id: int
+    destination_folder: str
 
 class DownloadResponse(BaseModel):
     id: int
@@ -107,27 +107,83 @@ async def resume_download(task_id: int, background_tasks: BackgroundTasks, db: S
     background_tasks.add_task(downloader_manager.start_download, task.id)
     return task
 
+@app.get("/api/folders")
+def get_folders(path: str = None):
+    import sys
+    
+    # If no path specified, return root drives (Windows) or root path (Unix)
+    if not path:
+        if sys.platform == 'win32':
+            import string
+            drives = []
+            for letter in string.ascii_uppercase:
+                if os.path.exists(f"{letter}:\\"):
+                    drives.append({"name": f"{letter}:\\", "path": f"{letter}:\\", "is_dir": True})
+            return drives
+        else:
+            path = "/"
+            
+    try:
+        if not os.path.exists(path) or not os.path.isdir(path):
+            return []
+            
+        folders = []
+        # Add parent directory as an option if not at root
+        parent = os.path.dirname(path)
+        if parent != path:
+            folders.append({"name": "..", "path": parent, "is_dir": True})
+            
+        for item in os.listdir(path):
+            full_path = os.path.join(path, item)
+            if os.path.isdir(full_path) and not item.startswith('.'):
+                folders.append({"name": item, "path": full_path, "is_dir": True})
+                
+        # Sort folders alphabetically (ignoring case), with '..' always first
+        sorted_folders = sorted([f for f in folders if f["name"] != ".."], key=lambda x: x['name'].lower())
+        if any(f["name"] == ".." for f in folders):
+            sorted_folders.insert(0, {"name": "..", "path": parent, "is_dir": True})
+            
+        return sorted_folders
+    except Exception as e:
+        # Permission denied or other errors
+        return []
+
 import shutil
 
 @app.post("/api/move")
-def move_local_file(request: MoveRequest):
-    source = request.source_path.strip()
+def move_task_file(request: MoveTaskRequest, db: Session = Depends(get_db)):
+    task = db.query(DownloadTask).filter(DownloadTask.id == request.task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+        
+    if task.status != DownloadStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="Can only move completed downloads")
+        
+    if not task.filename:
+        raise HTTPException(status_code=400, detail="Task has no filename assigned")
+        
+    source_path = os.path.join(task.destination_folder, task.filename)
     dest_dir = request.destination_folder.strip()
     
-    if not os.path.exists(source):
-        raise HTTPException(status_code=400, detail=f"Source file not found: {source}")
-        
-    if not os.path.isfile(source):
-        raise HTTPException(status_code=400, detail=f"Source must be a file, not a directory: {source}")
+    if not os.path.exists(source_path):
+        raise HTTPException(status_code=404, detail=f"Source file not found on disk: {source_path}")
         
     os.makedirs(dest_dir, exist_ok=True)
+    dest_path = os.path.join(dest_dir, task.filename)
     
-    filename = os.path.basename(source)
-    dest_path = os.path.join(dest_dir, filename)
+    # Check if destination already has the file
+    if os.path.exists(dest_path) and source_path != dest_path:
+        raise HTTPException(status_code=400, detail=f"File already exists at destination: {dest_path}")
     
     try:
-        shutil.move(source, dest_path)
-        return {"status": "success", "message": f"Moved {filename} to {dest_dir}"}
+        if source_path != dest_path:
+            shutil.move(source_path, dest_path)
+        
+        # Update database record
+        task.destination_folder = dest_dir
+        db.commit()
+        
+        return {"status": "success", "message": f"Moved {task.filename} to {dest_dir}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to move file: {str(e)}")
 

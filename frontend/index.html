@@ -25,15 +25,7 @@
         </header>
 
         <section class="glass-panel" id="add-download-section">
-            <div class="tabs">
-                <button class="tab-btn active" data-target="download-form-container"><i
-                        class="fa-solid fa-cloud-arrow-down"></i> Download URL</button>
-                <button class="tab-btn" data-target="move-form-container"><i class="fa-solid fa-folder-tree"></i> Move
-                    Local File</button>
-            </div>
-
-            <!-- Download Form -->
-            <div id="download-form-container" class="tab-content active">
+            <div id="download-form-container">
                 <form id="download-form">
                     <div class="input-group">
                         <label for="url"><i class="fa-solid fa-link"></i> Model URL</label>
@@ -46,6 +38,8 @@
                         <div class="input-with-btn">
                             <input type="text" id="destination" name="destination" list="favorites-list"
                                 placeholder="e.g. /mnt/hogehoge or models/downloads" value="models/downloads" required>
+                            <button type="button" class="icon-btn" onclick="openFolderBrowser('destination')"
+                                title="Browse Folders"><i class="fa-solid fa-folder-open"></i></button>
                             <button type="button" class="icon-btn" onclick="saveFavorite('destination')"
                                 title="Save to Favorites"><i class="fa-solid fa-star"></i></button>
                         </div>
@@ -53,30 +47,6 @@
 
                     <button type="submit" class="primary-btn"><i class="fa-solid fa-download"></i> Start
                         Download</button>
-                </form>
-            </div>
-
-            <!-- Move Form -->
-            <div id="move-form-container" class="tab-content">
-                <form id="move-form">
-                    <div class="input-group">
-                        <label for="source_path"><i class="fa-solid fa-file"></i> Local File Absolute Path</label>
-                        <input type="text" id="source_path" name="source_path"
-                            placeholder="C:\Downloads\model.safetensors" required>
-                    </div>
-
-                    <div class="input-group">
-                        <label for="move_destination"><i class="fa-solid fa-folder-open"></i> Destination
-                            Directory</label>
-                        <div class="input-with-btn">
-                            <input type="text" id="move_destination" name="move_destination" list="favorites-list"
-                                placeholder="e.g. /mnt/hogehoge or models/downloads" value="models/downloads" required>
-                            <button type="button" class="icon-btn" onclick="saveFavorite('move_destination')"
-                                title="Save to Favorites"><i class="fa-solid fa-star"></i></button>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="primary-btn"><i class="fa-solid fa-truck-fast"></i> Move File</button>
                 </form>
             </div>
         </section>
@@ -100,6 +70,8 @@
                     <span class="destination badge">models/checkpoints</span>
                 </div>
                 <div class="item-actions">
+                    <button class="move-btn hidden" aria-label="Move File" title="Move File"><i
+                            class="fa-solid fa-folder-tree"></i></button>
                     <button class="resume-btn hidden" aria-label="Resume Download" title="Resume"><i
                             class="fa-solid fa-play"></i></button>
                     <button class="delete-btn" aria-label="Cancel or Delete" title="Cancel/Delete"><i
@@ -123,6 +95,64 @@
             <div class="error-message"></div>
         </div>
     </template>
+
+    <!-- Folder Browser Modal -->
+    <div id="folder-browser-modal" class="modal hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-folder-open"></i> Select Directory</h2>
+                <button type="button" class="close-modal-btn" onclick="closeFolderBrowser()"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="current-path-display" id="modal-current-path">/</div>
+                <div class="folder-list" id="modal-folder-list">
+                    <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="secondary-btn" onclick="closeFolderBrowser()">Cancel</button>
+                <button type="button" class="primary-btn" onclick="selectCurrentFolder()"><i
+                        class="fa-solid fa-check"></i> Select Current Folder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Move Task Modal -->
+    <div id="move-task-modal" class="modal hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-folder-tree"></i> Move Downloaded File</h2>
+                <button type="button" class="close-modal-btn" onclick="closeMoveModal()"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="move-task-form">
+                    <input type="hidden" id="move_task_id">
+                    <div class="input-group">
+                        <label>File to Move:</label>
+                        <div id="move_task_filename"
+                            style="margin-bottom: 1rem; color: var(--accent-color); font-weight: 600;"></div>
+                    </div>
+                    <div class="input-group">
+                        <label for="move_task_destination"><i class="fa-solid fa-folder"></i> New Destination
+                            Directory</label>
+                        <div class="input-with-btn">
+                            <input type="text" id="move_task_destination" name="move_task_destination"
+                                list="favorites-list" required>
+                            <button type="button" class="icon-btn" onclick="openFolderBrowser('move_task_destination')"
+                                title="Browse Folders"><i class="fa-solid fa-folder-open"></i></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="secondary-btn" onclick="closeMoveModal()">Cancel</button>
+                <button type="button" class="primary-btn" onclick="submitMoveTask()"><i
+                        class="fa-solid fa-truck-fast"></i> Move</button>
+            </div>
+        </div>
+    </div>
 
     <datalist id="favorites-list">
         <!-- Injected by JS -->

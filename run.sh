@@ -8,4 +8,5 @@ fi
 
 source venv/bin/activate
 echo "Starting FastAPI Server..."
-python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+# Restart uvicorn dynamically
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload

@@ -66,72 +66,139 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Setup move form submission
-    const moveForm = document.getElementById('move-form');
-    moveForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const sourceInput = document.getElementById('source_path');
-        const destInput = document.getElementById('move_destination');
-        const submitBtn = moveForm.querySelector('button[type="submit"]');
-
-        const sourcePath = sourceInput.value.trim();
-        const destination = destInput.value;
-
-        if (!sourcePath) return;
-
-        // Disable button while submitting
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Moving...';
-
-        try {
-            const response = await fetch('/api/move', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    source_path: sourcePath,
-                    destination_folder: destination
-                })
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                alert(`Success: ${result.message}`);
-                sourceInput.value = '';
-            } else {
-                alert(`Failed to move file: ${result.detail || 'Unknown error'}`);
-            }
-        } catch (error) {
-            console.error('Error moving file:', error);
-            alert('Error communicating with server.');
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fa-solid fa-truck-fast"></i> Move File';
-        }
-    });
-
-    // Setup tabs
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Remove active class from all buttons and contents
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-            // Add active class to clicked button and target content
-            btn.classList.add('active');
-            const targetId = btn.getAttribute('data-target');
-            document.getElementById(targetId).classList.add('active');
-        });
-    });
-
     // Start polling for updates
     fetchDownloads();
     fetchInterval = setInterval(fetchDownloads, 2000);
 });
+
+// Modal & Folder Browser State
+let currentFolderBrowserTarget = '';
+let currentBrowserPath = '/';
+
+async function openFolderBrowser(targetInputId) {
+    currentFolderBrowserTarget = targetInputId;
+
+    // Check if input has a current valid path
+    const inputVal = document.getElementById(targetInputId).value;
+    if (inputVal && !inputVal.includes('models/')) {
+        currentBrowserPath = inputVal;
+    } else {
+        currentBrowserPath = ''; // backend will default to root/drives
+    }
+
+    document.getElementById('folder-browser-modal').classList.remove('hidden');
+    await loadFolders(currentBrowserPath);
+}
+
+function closeFolderBrowser() {
+    document.getElementById('folder-browser-modal').classList.add('hidden');
+}
+
+async function loadFolders(path) {
+    const listContainer = document.getElementById('modal-folder-list');
+    const pathDisplay = document.getElementById('modal-current-path');
+
+    listContainer.innerHTML = '<div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading...</div>';
+
+    try {
+        const url = path ? `/api/folders?path=${encodeURIComponent(path)}` : '/api/folders';
+        const response = await fetch(url);
+        const folders = await response.json();
+
+        listContainer.innerHTML = '';
+
+        if (folders.length > 0) {
+            // Update displayed path
+            const newPath = folders.find(f => f.name === '..')?.path || path || '/';
+            // Only update if it's not root drives view
+            if (folders[0].name.includes(':\\') && !path) {
+                pathDisplay.textContent = 'Select Drive';
+            } else {
+                pathDisplay.textContent = path || 'Root';
+                currentBrowserPath = path || '/'; // Update actual current path
+            }
+
+            folders.forEach(folder => {
+                const item = document.createElement('div');
+                item.className = 'folder-item' + (folder.name === '..' ? ' folder-up' : '');
+
+                const icon = folder.name === '..' ? 'fa-solid fa-level-up-alt' : (folder.name.includes(':\\') ? 'fa-solid fa-hard-drive' : 'fa-solid fa-folder');
+                item.innerHTML = `<i class="${icon}"></i> <span>${folder.name}</span>`;
+
+                item.addEventListener('click', () => {
+                    loadFolders(folder.path);
+                });
+
+                listContainer.appendChild(item);
+            });
+        } else {
+            listContainer.innerHTML = '<div style="padding: 1rem; color: #94a3b8; text-align: center;">Empty Directory or Access Denied</div>';
+        }
+
+    } catch (error) {
+        console.error('Error loading folders:', error);
+        listContainer.innerHTML = '<div class="error-message" style="display:block">Error loading folders</div>';
+    }
+}
+
+function selectCurrentFolder() {
+    if (currentFolderBrowserTarget && currentBrowserPath) {
+        document.getElementById(currentFolderBrowserTarget).value = currentBrowserPath;
+    }
+    closeFolderBrowser();
+}
+
+// Move Task Modal Logic
+function openMoveModal(taskId, filename, currentDestination) {
+    document.getElementById('move_task_id').value = taskId;
+    document.getElementById('move_task_filename').textContent = filename || 'Unknown file';
+    document.getElementById('move_task_destination').value = currentDestination || '';
+
+    document.getElementById('move-task-modal').classList.remove('hidden');
+}
+
+function closeMoveModal() {
+    document.getElementById('move-task-modal').classList.add('hidden');
+}
+
+async function submitMoveTask() {
+    const taskId = document.getElementById('move_task_id').value;
+    const destFolder = document.getElementById('move_task_destination').value.trim();
+
+    if (!taskId || !destFolder) return;
+
+    const submitBtn = document.querySelector('#move-task-modal .primary-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Moving...';
+
+    try {
+        const response = await fetch('/api/move', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                task_id: parseInt(taskId),
+                destination_folder: destFolder
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            closeMoveModal();
+            fetchDownloads(); // Refresh UI
+        } else {
+            alert(`Failed to move file: ${result.detail || 'Unknown error'}`);
+        }
+    } catch (error) {
+        console.error('Error moving file:', error);
+        alert('Error communicating with server.');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-truck-fast"></i> Move';
+    }
+}
 
 function getFavorites() {
     const favs = localStorage.getItem('downloadFavorites');
@@ -244,6 +311,9 @@ function renderDownloads(tasks) {
             const resumeBtn = el.querySelector('.resume-btn');
             resumeBtn.addEventListener('click', () => resumeDownload(task.id));
 
+            const moveBtn = el.querySelector('.move-btn');
+            moveBtn.addEventListener('click', () => openMoveModal(task.id, task.filename, task.destination_folder));
+
             // Append to DOM
             listContainer.appendChild(el);
         }
@@ -290,17 +360,22 @@ function updateElementData(el, task) {
 
     // Colors for completed progress bar
     const resumeBtn = el.querySelector('.resume-btn');
+    const moveBtn = el.querySelector('.move-btn');
+
     if (task.status === 'COMPLETED') {
         el.querySelector('.progress-fill').style.background = 'linear-gradient(90deg, #10b981, #34d399)';
         el.querySelector('.progress-fill').style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.5)';
         resumeBtn.classList.add('hidden');
+        moveBtn.classList.remove('hidden');
     } else if (task.status === 'FAILED' || task.status === 'CANCELLED') {
         el.querySelector('.progress-fill').style.background = '#64748b';
         el.querySelector('.progress-fill').style.boxShadow = 'none';
         el.querySelector('.percentage').textContent = task.status;
         resumeBtn.classList.remove('hidden');
+        moveBtn.classList.add('hidden');
     } else {
         resumeBtn.classList.add('hidden');
+        moveBtn.classList.add('hidden');
         el.querySelector('.progress-fill').style.background = 'linear-gradient(90deg, var(--accent-color), #818cf8)';
         el.querySelector('.progress-fill').style.boxShadow = '0 0 10px var(--accent-glow)';
     }
