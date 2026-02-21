@@ -46,6 +46,10 @@ async def create_download(request: DownloadRequest, background_tasks: Background
     # Standardize URL
     url = request.url.strip()
     
+    # Fix HuggingFace blob URLs
+    if "huggingface.co" in url and "/blob/" in url:
+        url = url.replace("/blob/", "/resolve/")
+    
     # Simple Civitai / HuggingFace parser fallback
     # Normally we'd use hf_hub, but direct URLs are easier to handle uniformly
     
