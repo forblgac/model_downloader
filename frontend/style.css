@@ -518,6 +518,10 @@ button.primary-btn:active {
     transition: opacity 0.3s ease;
 }
 
+#folder-browser-modal {
+    z-index: 1050;
+}
+
 .modal.hidden {
     opacity: 0;
     pointer-events: none;
