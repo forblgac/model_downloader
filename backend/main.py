@@ -28,6 +28,10 @@ class DownloadRequest(BaseModel):
     url: str
     destination_folder: Optional[str] = "models/downloads"
 
+class MoveRequest(BaseModel):
+    source_path: str
+    destination_folder: Optional[str] = "models/downloads"
+
 class DownloadResponse(BaseModel):
     id: int
     url: str
@@ -85,6 +89,47 @@ def delete_download(task_id: int, db: Session = Depends(get_db)):
     db.delete(task)
     db.commit()
     return {"status": "success"}
+
+@app.post("/api/downloads/{task_id}/resume", response_model=DownloadResponse)
+async def resume_download(task_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    task = db.query(DownloadTask).filter(DownloadTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+        
+    if task.status in [DownloadStatus.PENDING, DownloadStatus.DOWNLOADING, DownloadStatus.COMPLETED]:
+        raise HTTPException(status_code=400, detail=f"Cannot resume task in {task.status.value} state")
+        
+    task.status = DownloadStatus.PENDING
+    task.error_message = None
+    db.commit()
+    db.refresh(task)
+    
+    background_tasks.add_task(downloader_manager.start_download, task.id)
+    return task
+
+import shutil
+
+@app.post("/api/move")
+def move_local_file(request: MoveRequest):
+    source = request.source_path.strip()
+    dest_dir = request.destination_folder.strip()
+    
+    if not os.path.exists(source):
+        raise HTTPException(status_code=400, detail=f"Source file not found: {source}")
+        
+    if not os.path.isfile(source):
+        raise HTTPException(status_code=400, detail=f"Source must be a file, not a directory: {source}")
+        
+    os.makedirs(dest_dir, exist_ok=True)
+    
+    filename = os.path.basename(source)
+    dest_path = os.path.join(dest_dir, filename)
+    
+    try:
+        shutil.move(source, dest_path)
+        return {"status": "success", "message": f"Moved {filename} to {dest_dir}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to move file: {str(e)}")
 
 # Serve Frontend static files
 frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")

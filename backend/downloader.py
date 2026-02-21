@@ -45,31 +45,55 @@ class DownloadManager:
         try:
             os.makedirs(destination_folder, exist_ok=True)
             
+            file_path = ""
+            file_size = 0
+            headers = {}
+            
+            if task.filename:
+                file_path = os.path.join(destination_folder, task.filename)
+                if os.path.exists(file_path):
+                    file_size = os.path.getsize(file_path)
+                    if file_size > 0:
+                        headers["Range"] = f"bytes={file_size}-"
+            
             async with aiohttp.ClientSession() as session:
-                async with session.get(url, allow_redirects=True) as response:
+                async with session.get(url, headers=headers, allow_redirects=True) as response:
+                    if response.status == 416:
+                        task.status = DownloadStatus.COMPLETED
+                        task.progress_percent = 100.0
+                        task.downloaded_bytes = task.total_bytes
+                        return
+                        
                     response.raise_for_status()
                     
-                    # Extract filename
-                    filename = self._extract_filename(response, url)
-                    task.filename = filename
-                    db.commit()
+                    # Extract filename if not present
+                    if not task.filename:
+                        filename = self._extract_filename(response, url)
+                        task.filename = filename
+                        db.commit()
+                        file_path = os.path.join(destination_folder, filename)
                     
-                    file_path = os.path.join(destination_folder, filename)
+                    is_resume = response.status == 206
+                    if not is_resume:
+                        file_size = 0
+                        mode = 'wb'
+                    else:
+                        mode = 'ab'
                     
-                    total_size = int(response.headers.get('content-length', 0))
+                    content_length = int(response.headers.get('content-length', 0))
+                    total_size = file_size + content_length
                     task.total_bytes = total_size
                     db.commit()
                     
-                    downloaded_size = 0
+                    downloaded_size = file_size
                     chunk_size = 1024 * 1024 * 2  # 2MB chunks
                     
-                    async with aiofiles.open(file_path, mode='wb') as f:
+                    async with aiofiles.open(file_path, mode=mode) as f:
                         async for data in response.content.iter_chunked(chunk_size):
                             await f.write(data)
                             downloaded_size += len(data)
                             
-                            # Update DB periodically, but careful not to spam sync operations
-                            # Only update if progress > 1% changed to avoid DB lock contention
+                            # Update DB periodically
                             if total_size > 0:
                                 current_percent = (downloaded_size / total_size) * 100
                                 if current_percent - task.progress_percent >= 1.0 or downloaded_size == total_size:

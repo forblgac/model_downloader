@@ -5,15 +5,15 @@
     --accent-color: #6366f1;
     --accent-glow: rgba(99, 102, 241, 0.5);
     --accent-hover: #818cf8;
-    
+
     --success-color: #10b981;
     --warning-color: #f59e0b;
     --danger-color: #ef4444;
     --pending-color: #64748b;
-    
+
     --glass-bg: rgba(30, 41, 59, 0.7);
     --glass-border: rgba(255, 255, 255, 0.1);
-    
+
     --font-main: 'Outfit', sans-serif;
 }
 
@@ -45,7 +45,8 @@ body {
 .blob-1 {
     width: 400px;
     height: 400px;
-    background: rgba(99, 102, 241, 0.15); /* Indigo */
+    background: rgba(99, 102, 241, 0.15);
+    /* Indigo */
     top: -100px;
     left: -100px;
 }
@@ -53,15 +54,21 @@ body {
 .blob-2 {
     width: 300px;
     height: 300px;
-    background: rgba(236, 72, 153, 0.15); /* Pink */
+    background: rgba(236, 72, 153, 0.15);
+    /* Pink */
     bottom: 20%;
     right: -50px;
     animation-delay: -5s;
 }
 
 @keyframes float {
-    0% { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(50px, 50px) scale(1.1); }
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    100% {
+        transform: translate(50px, 50px) scale(1.1);
+    }
 }
 
 .container {
@@ -138,7 +145,38 @@ label i {
     margin-right: 0.5rem;
 }
 
-input, select {
+.input-with-btn {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.input-with-btn input {
+    flex-grow: 1;
+}
+
+.icon-btn {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--accent-color);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s;
+    font-size: 1.1rem;
+}
+
+.icon-btn:hover {
+    background: var(--accent-color);
+    color: white;
+}
+
+input,
+select {
     background: rgba(15, 23, 42, 0.6);
     border: 1px solid var(--glass-border);
     color: var(--text-primary);
@@ -149,7 +187,8 @@ input, select {
     transition: all 0.2s;
 }
 
-input:focus, select:focus {
+input:focus,
+select:focus {
     outline: none;
     border-color: var(--accent-color);
     box-shadow: 0 0 0 2px var(--accent-glow);
@@ -187,6 +226,62 @@ button.primary-btn:active {
     transform: translateY(0);
 }
 
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 1rem;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+    color: var(--accent-color);
+    background: rgba(99, 102, 241, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.3);
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Downloads List */
 .downloads-container {
     padding: 0;
@@ -218,8 +313,15 @@ button.primary-btn:active {
 }
 
 @keyframes slideIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .item-header {
@@ -262,10 +364,13 @@ button.primary-btn:active {
     width: fit-content;
 }
 
-.delete-btn {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--danger-color);
-    border: 1px solid rgba(239, 68, 68, 0.2);
+.item-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.delete-btn,
+.resume-btn {
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -276,9 +381,30 @@ button.primary-btn:active {
     transition: all 0.2s;
 }
 
+.delete-btn {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
 .delete-btn:hover {
     background: var(--danger-color);
     color: white;
+}
+
+.resume-btn {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.resume-btn:hover {
+    background: var(--success-color);
+    color: white;
+}
+
+.resume-btn.hidden {
+    display: none;
 }
 
 /* Status & Progress */
@@ -298,11 +424,30 @@ button.primary-btn:active {
     gap: 0.3rem;
 }
 
-.status-pending { background: rgba(100, 116, 139, 0.2); color: var(--pending-color); }
-.status-downloading { background: rgba(99, 102, 241, 0.2); color: var(--accent-hover); }
-.status-completed { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
-.status-failed { background: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
-.status-cancelled { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+.status-pending {
+    background: rgba(100, 116, 139, 0.2);
+    color: var(--pending-color);
+}
+
+.status-downloading {
+    background: rgba(99, 102, 241, 0.2);
+    color: var(--accent-hover);
+}
+
+.status-completed {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success-color);
+}
+
+.status-failed {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--danger-color);
+}
+
+.status-cancelled {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--warning-color);
+}
 
 .progress-container {
     display: flex;

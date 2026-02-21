@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,10 +13,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="blob-bg blob-1"></div>
     <div class="blob-bg blob-2"></div>
-    
+
     <div class="container">
         <header>
             <h1><i class="fa-solid fa-cloud-arrow-down"></i> Model Downloader</h1>
@@ -23,28 +25,60 @@
         </header>
 
         <section class="glass-panel" id="add-download-section">
-            <h2>Add New Download</h2>
-            <form id="download-form">
-                <div class="input-group">
-                    <label for="url"><i class="fa-solid fa-link"></i> Model URL</label>
-                    <input type="url" id="url" name="url" placeholder="https://huggingface.co/... or https://civitai.com/..." required>
-                </div>
-                
-                <div class="input-group">
-                    <label for="destination"><i class="fa-solid fa-folder"></i> Destination Directory</label>
-                    <select id="destination" name="destination">
-                        <option value="models/checkpoints">Checkpoint (models/checkpoints)</option>
-                        <option value="models/loras">LoRA (models/loras)</option>
-                        <option value="models/controlnet">ControlNet (models/controlnet)</option>
-                        <option value="models/unet">UNet (models/unet)</option>
-                        <option value="models/clip">CLIP (models/clip)</option>
-                        <option value="models/vae">VAE (models/vae)</option>
-                        <option value="models/downloads">Other (models/downloads)</option>
-                    </select>
-                </div>
-                
-                <button type="submit" class="primary-btn"><i class="fa-solid fa-download"></i> Start Download</button>
-            </form>
+            <div class="tabs">
+                <button class="tab-btn active" data-target="download-form-container"><i
+                        class="fa-solid fa-cloud-arrow-down"></i> Download URL</button>
+                <button class="tab-btn" data-target="move-form-container"><i class="fa-solid fa-folder-tree"></i> Move
+                    Local File</button>
+            </div>
+
+            <!-- Download Form -->
+            <div id="download-form-container" class="tab-content active">
+                <form id="download-form">
+                    <div class="input-group">
+                        <label for="url"><i class="fa-solid fa-link"></i> Model URL</label>
+                        <input type="url" id="url" name="url"
+                            placeholder="https://huggingface.co/... or https://civitai.com/..." required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="destination"><i class="fa-solid fa-folder"></i> Destination Directory</label>
+                        <div class="input-with-btn">
+                            <input type="text" id="destination" name="destination" list="favorites-list"
+                                placeholder="e.g. /mnt/hogehoge or models/downloads" value="models/downloads" required>
+                            <button type="button" class="icon-btn" onclick="saveFavorite('destination')"
+                                title="Save to Favorites"><i class="fa-solid fa-star"></i></button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="primary-btn"><i class="fa-solid fa-download"></i> Start
+                        Download</button>
+                </form>
+            </div>
+
+            <!-- Move Form -->
+            <div id="move-form-container" class="tab-content">
+                <form id="move-form">
+                    <div class="input-group">
+                        <label for="source_path"><i class="fa-solid fa-file"></i> Local File Absolute Path</label>
+                        <input type="text" id="source_path" name="source_path"
+                            placeholder="C:\Downloads\model.safetensors" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="move_destination"><i class="fa-solid fa-folder-open"></i> Destination
+                            Directory</label>
+                        <div class="input-with-btn">
+                            <input type="text" id="move_destination" name="move_destination" list="favorites-list"
+                                placeholder="e.g. /mnt/hogehoge or models/downloads" value="models/downloads" required>
+                            <button type="button" class="icon-btn" onclick="saveFavorite('move_destination')"
+                                title="Save to Favorites"><i class="fa-solid fa-star"></i></button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="primary-btn"><i class="fa-solid fa-truck-fast"></i> Move File</button>
+                </form>
+            </div>
         </section>
 
         <section class="downloads-container">
@@ -66,10 +100,13 @@
                     <span class="destination badge">models/checkpoints</span>
                 </div>
                 <div class="item-actions">
-                    <button class="delete-btn" aria-label="Cancel or Delete"><i class="fa-solid fa-xmark"></i></button>
+                    <button class="resume-btn hidden" aria-label="Resume Download" title="Resume"><i
+                            class="fa-solid fa-play"></i></button>
+                    <button class="delete-btn" aria-label="Cancel or Delete" title="Cancel/Delete"><i
+                            class="fa-solid fa-xmark"></i></button>
                 </div>
             </div>
-            
+
             <div class="status-indicator">
                 <span class="status-badge status-pending">PENDING</span>
             </div>
@@ -82,11 +119,16 @@
                     <span class="percentage">0%</span>
                 </div>
             </div>
-            
+
             <div class="error-message"></div>
         </div>
     </template>
 
+    <datalist id="favorites-list">
+        <!-- Injected by JS -->
+    </datalist>
+
     <script src="app.js"></script>
 </body>
+
 </html>
